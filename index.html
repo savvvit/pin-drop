@@ -17,12 +17,34 @@
     <div id="map"></div>
     <script src="dist/leaflet.js"></script>
     <script>
+        const urlCallback = 'https://go.glideapps.com/api/container/plugin/webhook-trigger/8ybSWFv5EtpRd7K8EFGq/e4b0341f-2290-4a50-8bd3-8e4e1b6978cc';
+
+        // Получаем параметры из ссылки
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('mode') || 'edit';
+        const userIdParam = urlParams.get('user_id') || 'guest';
+        const orderIdParam = urlParams.get('order_id');
+        let latParam = urlParams.get('lat');
+        let lngParam = urlParams.get('lng');
+        let zoomParam = urlParams.get('zoom') || 13;
+
+        // Если точки нет, используем Тбилиси
+        let startLat, startLng, startZoom;
+
+        if (!latParam || !lngParam) {
+            startLat = 41.7151;
+            startLng = 44.8271;
+            startZoom = 13;
+        } else {
+            startLat = parseFloat(latParam);
+            startLng = parseFloat(lngParam);
+            startZoom = parseInt(zoomParam);
+        }
+
         // Ждем полной загрузки страницы
         window.onload = function() {
-//            // Инициализация: [0, 0] - центр мира, 2 - масштаб
-//            var map = L.map('map').setView([20, 0], 2);
-            // Центрируем на Тбилиси
-            var map = L.map('map', { zoomControl: false }).setView([41.7151, 44.8271], 13);
+            // Инициализируем карту с выбранными координатами
+            var map = L.map('map', { zoomControl: false }).setView([startLat, startLng], startZoom);
     
 //            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 //            L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -41,6 +63,13 @@
                 zoomOffset: 0
             }).addTo(map);
 
+            // Если получены конкретные координаты (не дефолтные), 
+            // можно сразу поставить туда маркер
+            var marker;
+
+            if (latParam && lngParam) {
+                var marker = L.marker([startLat, startLng]).addTo(map);
+            }
             
             // КРИТИЧНО: Форсируем пересчет размеров карты через 500мс
             // Это решает проблему "серого экрана" в мобильных WebView
@@ -48,52 +77,57 @@
                 map.invalidateSize();
             }, 500);
     
-            var marker;
-
-            map.on('click', function(e) {
-                var lat = e.latlng.lat;
-                var lng = e.latlng.lng;
-    
-                if (marker) { marker.setLatLng(e.latlng); } 
-                else { marker = L.marker(e.latlng).addTo(map); }
-    
-                // 3. Получаем адрес (Геокодинг) через бесплатный Nominatim
-                fetch('https://nominatim.openstreetmap.org/reverse?lat='+ lat + '&lon=' + lng +'&accept-language=ru&format=json', {
-                        headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        var address = data.display_name || "Адрес не найден";
-                        
-                        // Контент всплывающего окна
-                        var popupContent = `
-                            <b>Координаты:</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}<br><br>
-                            <b>Адрес:</b><br>${address}<br>
-                            <button class="popup-btn" id="sendBtn">Отправить</button>
-                        `;
-    
-                        marker.bindPopup(popupContent).openPopup();
-    
-                        // 4. Обработка нажатия кнопки "Отправить"
-                        document.getElementById('sendBtn').onclick = function() {
-                            sendToWebhook(lat, lng, address);
-                        };
-                    });
-            });
+            if (modeParam='edit') {
+                map.on('click', function(e) {
+                    var lat = e.latlng.lat;
+                    var lng = e.latlng.lng;
+                    var address;
+        
+                    if (marker) { marker.setLatLng(e.latlng); } 
+                    else { marker = L.marker(e.latlng).addTo(map); }
+        
+    //                // Получаем адрес (Геокодинг) через бесплатный Nominatim
+    //                fetch('https://nominatim.openstreetmap.org/reverse?lat='+ lat + '&lon=' + lng +'&accept-language=ru&format=json', {
+    //                        headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
+    //                })
+    //                    .then(res => res.json())
+    //                    .then(data => {
+    //                        var address = data.display_name || "Адрес не найден";
+    //                        
+    //                        // Контент всплывающего окна
+    //                        var popupContent = `
+    //                            <b>Координаты:</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}<br><br>
+    //                            <b>Адрес:</b><br>${address}<br>
+    //                            <button class="popup-btn" id="sendBtn">Отправить</button>
+    //                        `;
+                    var popupContent = `
+                        <b>Машина здесь</b><br><br><br>
+                        <button class="popup-btn" id="sendBtn">Отправить</button>
+                    `;
+        
+                    marker.bindPopup(popupContent).openPopup();
+        
+                    // Обработка нажатия кнопки "Отправить"
+                    document.getElementById('sendBtn').onclick = function() {
+                        sendToWebhook(lat, lng, address);
+                    };
+                });
+            };
         };
     
         function sendToWebhook(lat, lng, addr) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = params.get('user_id') || 'guest';
+//            const urlParams = new URLSearchParams(window.location.search);
+//            const userId = params.get('user_id') || 'guest';
 
             // Подготовка данных для Glide
             const payload = {
                 latitude: lat,
                 longitude: lng,
                 address: addr,
-                user_id: userId
+                user_id: userIdParam,
+                order_id: orderIdParam
             };            
-            fetch('ВАШ_WEBHOOK_URL', {
+            fetch(ulrCallback, {
                 method: 'POST',
                 mode: 'no-cors',
                 body: JSON.stringify(payload)
