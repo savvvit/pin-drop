@@ -88,6 +88,8 @@
             startZoom = parseInt(zoomParam);
         }
 
+        var marker;
+
         // Ждем полной загрузки страницы
         window.onload = function() {
             // Инициализируем карту с выбранными координатами
@@ -112,10 +114,9 @@
 
             // Если получены конкретные координаты (не дефолтные), 
             // можно сразу поставить туда маркер
-            var marker;
 
             if (latParam && lngParam) {
-                var marker = L.marker([startLat, startLng]).addTo(map);
+                marker = L.marker([startLat, startLng]).addTo(map);
             }
             
             // КРИТИЧНО: Форсируем пересчет размеров карты через 500мс
