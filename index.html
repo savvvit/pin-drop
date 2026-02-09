@@ -11,6 +11,51 @@
             background: #2196F3; color: white; border: none; padding: 8px 12px;
             border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;
         }
+
+        /* Настройка самого облачка */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        
+        .leaflet-popup-tip {
+            background: white;
+        }
+        
+        /* Контент внутри */
+        .popup-container {
+            text-align: center;
+            padding: 5px;
+            min-width: 140px;
+        }
+        
+        .popup-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .popup-btn {
+            background: #007AFF; /* Цвет Apple Blue */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .popup-btn:active {
+            background: #0056b3;
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -102,17 +147,35 @@
     //                            <b>Адрес:</b><br>${address}<br>
     //                            <button class="popup-btn" id="sendBtn">Отправить</button>
     //                        `;
+                    // Контент всплывающего окна
                     var popupContent = `
-                        <b>Машина здесь</b><br><br><br>
-                        <button class="popup-btn" id="sendBtn">Отправить</button>
+                        <div class="popup-container">
+                            <span class="popup-title">Машина здесь</span>
+                            <button class="popup-btn" id="glideSendBtn">Отправить</button>
+                        </div>
                     `;
+                    
+                    marker.bindPopup(popupContent, {
+                        closeButton: false, // Убираем крестик для минимализма
+                        offset: [0, -5]     // Немного приподнимаем над маркером
+                    }).openPopup();
+                    
+                    // Привязка события (setTimeout, чтобы кнопка успела появиться в DOM)
+                    setTimeout(() => {
+                        const btn = document.getElementById('glideSendBtn');
+                        if (btn) {
+                            btn.onclick = () => {
+                                btn.innerText = "Отправка...";
+                                btn.style.opacity = "0.7";
+                                sendToWebhook(lat, lng, address);
+                            };
+                        }
+                    }, 50);
         
-                    marker.bindPopup(popupContent).openPopup();
         
-                    // Обработка нажатия кнопки "Отправить"
-                    document.getElementById('sendBtn').onclick = function() {
-                        sendToWebhook(lat, lng, address);
-                    };
+//                    document.getElementById('sendBtn').onclick = function() {
+//                        sendToWebhook(lat, lng, address);
+//                    };
                 });
             };
         };
@@ -134,15 +197,16 @@
                 mode: 'no-cors',
                 body: JSON.stringify(payload)
             })
-            .then(response => {
-                if (response.ok) {
-                    alert("Данные успешно отправлены!");
-                    marker.closePopup();
-                } else {
-                    alert("Ошибка отправки данных.");
-                }
+            .then(() => {
+                // В режиме no-cors мы всегда попадаем сюда, если нет ошибки сети
+                alert("Данные успешно отправлены!");
+                marker.closePopup();
             })
-            .catch(err => alert("Ошибка сети: " + err));
+            .catch(err => {
+                // Сюда попадем только если ВООБЩЕ нет интернета
+                alert("Ошибка сети: " + err));
+                console.error(err);
+            });
         }
     </script>
 </body>
