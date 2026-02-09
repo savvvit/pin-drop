@@ -21,12 +21,14 @@
 
         // Получаем параметры из ссылки
         const urlParams = new URLSearchParams(window.location.search);
-        const modeParam = urlParams.get('mode') || 'edit';
+        const modeParam = urlParams.get('mode') || 'view';
+        const modeIsEdit = modeParam === 'edit';
         const userIdParam = urlParams.get('user_id') || 'guest';
         const orderIdParam = urlParams.get('order_id');
         let latParam = urlParams.get('lat');
         let lngParam = urlParams.get('lng');
         let zoomParam = urlParams.get('zoom') || 13;
+        
 
         // Если точки нет, используем Тбилиси
         let startLat, startLng, startZoom;
@@ -77,7 +79,7 @@
                 map.invalidateSize();
             }, 500);
     
-            if (modeParam='edit') {
+            if (modeIsEdit) {
                 map.on('click', function(e) {
                     var lat = e.latlng.lat;
                     var lng = e.latlng.lng;
