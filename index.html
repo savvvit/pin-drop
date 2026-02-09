@@ -26,9 +26,16 @@
     
 //            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             // Слой Google Maps (Русский язык) - Самый стабильный для Тбилиси
-            L.tileLayer('https://{s}://{x}&y={y}&z={z}', {
-                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-                attribution: '© Google'
+//            L.tileLayer('https://{s}://{x}&y={y}&z={z}', {
+//                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+//                attribution: '© Google'
+//            }).addTo(map);
+            L.tileLayer('https://mt1.google.com{x}&y={y}&z={z}', {
+                attribution: '© Google',
+                // Эти настройки важны для корректной сборки URL в Safari
+                tileSize: 256,
+                zoomOffset: 0,
+                detectRetina: false
             }).addTo(map);
             
             // КРИТИЧНО: Форсируем пересчет размеров карты через 500мс
