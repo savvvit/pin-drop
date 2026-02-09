@@ -58,7 +58,9 @@
                 else { marker = L.marker(e.latlng).addTo(map); }
     
                 // 3. Получаем адрес (Геокодинг) через бесплатный Nominatim
-                fetch(`https://nominatim.openstreetmap.org{lat}&lon=${lng}&accept-language=ru`)
+                fetch(`https://nominatim.openstreetmap.org/?lat={lat}&lon=${lng}&accept-language=ru&format=json`, {
+                        headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
+                })
                     .then(res => res.json())
                     .then(data => {
                         var address = data.display_name || "Адрес не найден";
@@ -82,22 +84,30 @@
     
         function sendToWebhook(lat, lng, addr) {
             const urlParams = new URLSearchParams(window.location.search);
-            
+            const userId = params.get('user_id') || 'guest';
+
+            // Подготовка данных для Glide
+            const payload = {
+                latitude: lat,
+                longitude: lng,
+                address: addr,
+                user_id: userId
+            };            
             fetch('ВАШ_WEBHOOK_URL', {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({
-                    latitude: lat,
-                    longitude: lng,
-                    address: addr,
-                    userId: urlParams.get('userId') || 'guest'
-                })
-            }).then(() => {
-                alert("Данные успешно отправлены!");
-                marker.closePopup();
-            });
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Данные успешно отправлены!");
+                    marker.closePopup();
+                } else {
+                    alert("Ошибка отправки данных.");
+                }
+            })
+            .catch(err => alert("Ошибка сети: " + err));
         }
-    </script>
     </script>
 </body>
 </html>
