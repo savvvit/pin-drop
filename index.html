@@ -5,8 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
-        #map { height: 100vh; width: 100%; }
+        /* Принудительно задаем высоту всем родительским элементам */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+        }
+        #map { 
+            height: 100vh; /* 100% высоты видимой области */
+            width: 100vw; 
+            background: #f0f0f0; /* Поможет понять, отрисовался ли сам блок */
+        }
     </style>
 </head>
 <body>
