@@ -5,17 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="dist/leaflet.css" />
     <style>
-        /* Принудительно задаем высоту всем родительским элементам */
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-        }
-        #map { 
-            height: 100vh; /* 100% высоты видимой области */
-            width: 100vw; 
-            background: #f0f0f0; /* Поможет понять, отрисовался ли сам блок */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        .popup-bin {
+            background: #2196F3; color: white; border: none; padding: 8px 12px;
+            border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;
         }
     </style>
 </head>
@@ -25,10 +19,14 @@
     <script>
         // Ждем полной загрузки страницы
         window.onload = function() {
-            // Инициализация: [0, 0] - центр мира, 2 - масштаб
-            var map = L.map('map').setView([20, 0], 2);
+//            // Инициализация: [0, 0] - центр мира, 2 - масштаб
+//            var map = L.map('map').setView([20, 0], 2);
+            // Центрируем на Тбилиси
+            var map = L.map('map', { zoomControl: false }).setView([41.7151, 44.8271], 13);
     
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Слой карты с поддержкой русского языка (CartoDB)
+            L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
     
@@ -38,13 +36,56 @@
                 map.invalidateSize();
             }, 500);
     
+            var marker;
+
             map.on('click', function(e) {
-                console.log("Клик:", e.latlng);
-                alert("Координаты: " + e.latlng.lat + ", " + e.latlng.lng);
-                // Ваш код отправки на Webhook
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+    
+                if (marker) { marker.setLatLng(e.latlng); } 
+                else { marker = L.marker(e.latlng).addTo(map); }
+    
+                // 3. Получаем адрес (Геокодинг) через бесплатный Nominatim
+                fetch(`https://nominatim.openstreetmap.org{lat}&lon=${lng}&accept-language=ru`)
+                    .then(res => res.json())
+                    .then(data => {
+                        var address = data.display_name || "Адрес не найден";
+                        
+                        // Контент всплывающего окна
+                        var popupContent = `
+                            <b>Координаты:</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}<br><br>
+                            <b>Адрес:</b><br>${address}<br>
+                            <button class="popup-btn" id="sendBtn">Отправить</button>
+                        `;
+    
+                        marker.bindPopup(popupContent).openPopup();
+    
+                        // 4. Обработка нажатия кнопки "Отправить"
+                        document.getElementById('sendBtn').onclick = function() {
+                            sendToWebhook(lat, lng, address);
+                        };
+                    });
             });
         };
-
+    
+        function sendToWebhook(lat, lng, addr) {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            fetch('ВАШ_WEBHOOK_URL', {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lng,
+                    address: addr,
+                    userId: urlParams.get('userId') || 'guest'
+                })
+            }).then(() => {
+                alert("Данные успешно отправлены!");
+                marker.closePopup();
+            });
+        }
+    </script>
     </script>
 </body>
 </html>
