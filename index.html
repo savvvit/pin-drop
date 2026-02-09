@@ -25,10 +25,10 @@
             var map = L.map('map', { zoomControl: false }).setView([41.7151, 44.8271], 13);
     
 //            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            // Слой Google Maps (Русский язык) - Самый стабильный для Тбилиси
-            L.tileLayer('https://server.arcgisonline.com/{z}/{y}/{x}', {
-                attribution: '© Esri & OSM'
+            L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap'
             }).addTo(map);
+
             
             // КРИТИЧНО: Форсируем пересчет размеров карты через 500мс
             // Это решает проблему "серого экрана" в мобильных WebView
