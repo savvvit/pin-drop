@@ -3,39 +3,46 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Используем другой CDN для проверки -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com" />
+    <!-- Полная прямая ссылка на стили -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
-        #map { height: 100vh; width: 100%; background: #eee; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
+        #map { height: 100vh; width: 100%; background: #ccc; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     
-    <script src="https://cdnjs.cloudflare.com"></script>
+    <!-- Полная прямая ссылка на скрипт -->
+    <script src="https://cdn.jsdelivr.net"></script>
     
     <script>
-        // Инициализация после загрузки скрипта
-        var map = L.map('map').setView([20, 0], 2);
+        // Проверяем, загрузилась ли библиотека перед использованием
+        window.onload = function() {
+            if (typeof L !== 'undefined') {
+                var map = L.map('map').setView([20, 0], 2);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                L.tileLayer('https://tile.openstreetmap.org{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(map);
 
-        map.on('click', function(e) {
-            var lat = e.latlng.lat;
-            var lng = e.latlng.lng;
-            
-            L.marker([lat, lng]).addTo(map);
-
-            // Отправка на Webhook
-            fetch('ВАШ_WEBHOOK_URL', {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ lat: lat, lng: lng })
-            });
-            
-            alert("Sent: " + lat.toFixed(4) + ", " + lng.toFixed(4));
-        });
+                map.on('click', function(e) {
+                    var lat = e.latlng.lat;
+                    var lng = e.latlng.lng;
+                    L.marker([lat, lng]).addTo(map);
+                    
+                    fetch('ВАШ_WEBHOOK_URL', {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({lat: lat, lng: lng})
+                    });
+                    
+                    alert("Sent: " + lat.toFixed(4) + ", " + lng.toFixed(4));
+                });
+            } else {
+                document.getElementById('map').innerHTML = 'Ошибка загрузки Leaflet. Проверьте соединение.';
+            }
+        };
     </script>
 </body>
 </html>
