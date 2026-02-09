@@ -58,7 +58,7 @@
                 else { marker = L.marker(e.latlng).addTo(map); }
     
                 // 3. Получаем адрес (Геокодинг) через бесплатный Nominatim
-                fetch(`https://nominatim.openstreetmap.org/?lat={lat}&lon=${lng}&accept-language=ru&format=json`, {
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat={lat}&lon=${lng}&accept-language=ru&format=json`, {
                         headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
                 })
                     .then(res => res.json())
