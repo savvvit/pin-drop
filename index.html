@@ -92,7 +92,7 @@
             startZoom = parseInt(zoomParam);
         }
 
-        var marker;
+        let marker;
 
         // Ждем полной загрузки страницы
         window.onload = function() {
@@ -131,54 +131,20 @@
     
             if (modeIsEdit) {
                 map.on('click', function(e) {
-                    var lat = e.latlng.lat;
-                    var lng = e.latlng.lng;
-                    var displayAddress;
-                    var structuredAddress;
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    let displayAddress;
+                    let structuredAddress;
         
                     if (marker) { marker.setLatLng(e.latlng); } 
                     else { marker = L.marker(e.latlng).addTo(map); }
-
-
-
-
                     
-                    // Получаем адрес (Геокодинг) через бесплатный Nominatim
-                    fetch('https://nominatim.openstreetmap.org/reverse?lat='+ (lat + latCorrection) + '&lon=' + (lng + lngCorrection) +'&accept-language=ru&format=json&addressdetails=1', {
-                            headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        const a = data.address;
-                        
-                        // Формируем "красивый" адрес для показа пользователю (до города)
-                        // Выбираем только улицу/дом и район/город
-                        const street = a.road || a.pedestrian || "";
-                        const house = a.house_number || "";
-                        const city = a.city || a.town || a.village || "";
-                        
-                        const shortAddress = `${street} ${house}${street ? ', ' : ''}${city}`.trim();
-                
-                        // Формируем полный объект для отправки в Callback
-                        structuredAddress = JSON.stringify({
-                            street: street,
-                            house: house,
-                            city: city,
-                            suburb: a.suburb || "",
-                            postcode: a.postcode || "",
-                            full: data.display_name || "",
-                            display: shortAddress || "Адрес не найден"
-                        });
-                        displayAddress = shortAddress || "Адрес не найден";
-                    });
-
                     // Контент всплывающего окна
-                    var popupContent = `
+                    const popupContent = `
                         <div class="popup-container">
                             <span class="popup-title">Машина здесь</span>
-                            <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                                Примерный адрес:<br>
-                                <b style="color: #333;">${displayAddress}</b>
+                            <div id="address-status" style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                Определяем адрес...
                             </div>
                             <button class="popup-btn" id="glideSendBtn">Отправить</button>
                         </div>
@@ -189,35 +155,74 @@
                         offset: [0, -5]     // Немного приподнимаем над маркером
                     }).openPopup();
                     
-                    // Привязка события (setTimeout, чтобы кнопка успела появиться в DOM)
-                    setTimeout(() => {
-                        const btn = document.getElementById('glideSendBtn');
-                        if (btn) {
-                            btn.onclick = () => {
-                                btn.innerText = "Отправка...";
-                                btn.style.opacity = "0.7";
-                                sendToWebhook(lat + latCorrection, lng + lngCorrection, structuredAddress || "{}");
-                            };
-                        }
-                    }, 50);
-        
-        
-//                    document.getElementById('sendBtn').onclick = function() {
-//                        sendToWebhook(lat, lng, address);
-//                    };
+                    // Получаем адрес (Геокодинг) через бесплатный Nominatim
+                    fetch('https://nominatim.openstreetmap.org/reverse?lat='+ (lat + latCorrection) + '&lon=' + (lng + lngCorrection) +'&accept-language=ru&format=json&addressdetails=1', {
+                            headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error(); // Если сервер ответил ошибкой (например, 400 или 500)
+                        return res.json();
+                    })
+                    .then(data => {
+                        const a = data.address;
+                        
+                        // Формируем "красивый" адрес для показа пользователю (до города)
+                        // Выбираем только улицу/дом и район/город
+                        const street = a.road || a.pedestrian || "";
+                        const house = a.house_number || "";
+                        const city = a.city || a.town || a.village || "";
+                        const suburb = a.suburb || "";
+                        const postcode = a.postcode || "";
+                        const full = data.display_name || "";
+                        
+                        const shortAddress = (`${street} ${house}${street ? ', ' : ''}${city}`.trim()) || "Адрес не найден";
+
+                        // Даем Leaflet 50-100мс на отрисовку окна в DOM
+                        setTimeout(() => {
+                            // Обновляем текст в уже открытом окне
+                            document.getElementById('address-status').innerHTML = 
+                                `Примерный адрес:<br><b style="color: #333;">${shortAddress}</b>`;
+            
+                            // Подготавливаем данные для кнопки (как в прошлом шаге)
+                            setupSendButton(lat + latCorrection, lng + lngCorrection, JSON.stringify({ street, house, city, suburb, postcode, full, display: shortAddress }));
+                        }, 100);
+                    })
+                    .catch(() => {
+                        // ЕСЛИ ОШИБКА: Меняем текст на уведомление, но оставляем кнопку
+                        setTimeout(() => {
+                            const statusEl = document.getElementById('address-status');
+                            if (statusEl) {
+                                statusEl.innerHTML = `<span style="color: #f44336;">Адрес не определен (ошибка сети)</span>`;
+                            }
+                            // Кнопка все равно будет работать, отправит только координаты
+                            setupSendButton(lat + latCorrection, lng + lngCorrection, JSON.stringify({ note: "Ошибка геокодинга" }));
+                        }, 100);
+                    });                            
                 });
             };
         };
+
+        // Вспомогательная функция для активации кнопки
+        function setupSendButton(lat, lng, jsonAddr) {
+            const btn = document.getElementById('glideSendBtn');
+            if (btn) {
+                btn.onclick = () => {
+                    btn.innerText = "Отправка...";
+                    btn.style.opacity = "0.7";
+                    sendToWebhook(lat, lng, jsonAddr);
+                };
+            }
+        }
     
-        function sendToWebhook(lat, lng, addr) {
+        function sendToWebhook(lat, lng, jsonAddr) {
 //            const urlParams = new URLSearchParams(window.location.search);
 //            const userId = params.get('user_id') || 'guest';
 
-            // Подготовка данных для Glide
+            // Подготовка данных для Callback
             const payload = {
                 latitude: lat,
                 longitude: lng,
-                address: addr,
+                address: jsonAddr,
                 user_id: userIdParam,
                 order_id: orderIdParam
             };            
