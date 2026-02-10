@@ -169,7 +169,7 @@
                             full: data.display_name || "",
                             display: shortAddress || "Адрес не найден"
                         });
-                        displayAddress = shortAddress;
+                        displayAddress = shortAddress || "Адрес не найден";
                     });
 
                     // Контент всплывающего окна
@@ -178,7 +178,7 @@
                             <span class="popup-title">Машина здесь</span>
                             <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
                                 Примерный адрес:<br>
-                                <b style="color: #333;">${displayAddress || "Адрес не найден"}</b>
+                                <b style="color: #333;">${displayAddress}</b>
                             </div>
                             <button class="popup-btn" id="glideSendBtn">Отправить</button>
                         </div>
