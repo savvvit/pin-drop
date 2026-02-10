@@ -133,25 +133,53 @@
                 map.on('click', function(e) {
                     var lat = e.latlng.lat;
                     var lng = e.latlng.lng;
-                    var address;
+//                    var address;
+//                    var structuredAddress;
         
                     if (marker) { marker.setLatLng(e.latlng); } 
                     else { marker = L.marker(e.latlng).addTo(map); }
-        
+
+
+
+
+                    
                     // Получаем адрес (Геокодинг) через бесплатный Nominatim
-                    fetch('https://nominatim.openstreetmap.org/reverse?lat='+ (lat + latCorrection) + '&lon=' + (lng + lngCorrection) +'&accept-language=ru&format=json', {
+                    fetch('https://nominatim.openstreetmap.org/reverse?lat='+ (lat + latCorrection) + '&lon=' + (lng + lngCorrection) +'&accept-language=ru&format=json&addressdetails=1', {
                             headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
                     })
                     .then(res => res.json())
                     .then(data => {
-                        address = data.display_name || "Адрес не найден";
+                        const a = data.address;
+                        
+                        // Формируем "красивый" адрес для показа пользователю (до города)
+                        // Выбираем только улицу/дом и район/город
+                        const street = a.road || a.pedestrian || "";
+                        const house = a.house_number || "";
+                        const city = a.city || a.town || a.village || "";
+                        
+                        const displayAddress = `${street} ${house}${street ? ', ' : ''}${city}`.trim();
+                
+                        // Формируем полный объект для отправки в Callback
+                        const structuredAddress = JSON.stringify({
+                            street: street,
+                            house: house,
+                            city: city,
+                            suburb: a.suburb || "",
+                            postcode: a.postcode || "",
+                            full: data.display_name || "",
+                            display: displayAddress || ""
+                        });
+//                        address = data.display_name || "Адрес не найден";
                     });
 
                     // Контент всплывающего окна
-                    var popupContent = `
+                    const popupContent = `
                         <div class="popup-container">
                             <span class="popup-title">Машина здесь</span>
-                            <span>Адрес: {address}</span>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                Примерный адрес:<br>
+                                <b style="color: #333;">${displayAddress}</b>
+                            </div>
                             <button class="popup-btn" id="glideSendBtn">Отправить</button>
                         </div>
                     `;
@@ -168,7 +196,7 @@
                             btn.onclick = () => {
                                 btn.innerText = "Отправка...";
                                 btn.style.opacity = "0.7";
-                                sendToWebhook(lat + latCorrection, lng + lngCorrection, address);
+                                sendToWebhook(lat + latCorrection, lng + lngCorrection, structuredAddress || "{}");
                             };
                         }
                     }, 50);
