@@ -73,19 +73,22 @@
         let latParam = urlParams.get('lat');
         let lngParam = urlParams.get('lng');
         let zoomParam = urlParams.get('zoom') || 20;
+
+        // Сдвиг карты Yandex для центра Тбилиси 
+        const latCorrection = 41.693418 - 41.502435;
+        const lngCorrection = 44.801465 - 44.801516;
         
 
-        // Если точки нет, используем Тбилиси
+        // Если точки нет, используем центр Тбилиси
         let startLat, startLng, startZoom;
 
         if (!latParam || !lngParam) {
-//            41.5024347388, 44.8015156327
-            startLat = 41.5024; //41.7151;
-            startLng = 44.8015; //44.8271;
+            startLat = 41.502435;
+            startLng = 44.801516;
             startZoom = 13;
         } else {
-            startLat = parseFloat(latParam);
-            startLng = parseFloat(lngParam);
+            startLat = parseFloat(latParam) - latCorrection;
+            startLng = parseFloat(lngParam) - lngCorrection;
             startZoom = parseInt(zoomParam);
         }
 
@@ -135,24 +138,20 @@
                     if (marker) { marker.setLatLng(e.latlng); } 
                     else { marker = L.marker(e.latlng).addTo(map); }
         
-    //                // Получаем адрес (Геокодинг) через бесплатный Nominatim
-    //                fetch('https://nominatim.openstreetmap.org/reverse?lat='+ lat + '&lon=' + lng +'&accept-language=ru&format=json', {
-    //                        headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
-    //                })
-    //                    .then(res => res.json())
-    //                    .then(data => {
-    //                        var address = data.display_name || "Адрес не найден";
-    //                        
-    //                        // Контент всплывающего окна
-    //                        var popupContent = `
-    //                            <b>Координаты:</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}<br><br>
-    //                            <b>Адрес:</b><br>${address}<br>
-    //                            <button class="popup-btn" id="sendBtn">Отправить</button>
-    //                        `;
+                    // Получаем адрес (Геокодинг) через бесплатный Nominatim
+                    fetch('https://nominatim.openstreetmap.org/reverse?lat='+ (lat + latCorrection) + '&lon=' + (lng + lngCorrection) +'&accept-language=ru&format=json', {
+                            headers: { 'User-Agent': 'MyGlideApp/1.0 (savvvit@gmail.com)' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        address = data.display_name || "Адрес не найден";
+                    };
+
                     // Контент всплывающего окна
                     var popupContent = `
                         <div class="popup-container">
                             <span class="popup-title">Машина здесь</span>
+                            <span>Адрес: {address}</span>
                             <button class="popup-btn" id="glideSendBtn">Отправить</button>
                         </div>
                     `;
@@ -169,7 +168,7 @@
                             btn.onclick = () => {
                                 btn.innerText = "Отправка...";
                                 btn.style.opacity = "0.7";
-                                sendToWebhook(lat, lng, address);
+                                sendToWebhook(lat + latCorrection, lng + lngCorrection, address);
                             };
                         }
                     }, 50);
