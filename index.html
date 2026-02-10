@@ -133,8 +133,8 @@
                 map.on('click', function(e) {
                     var lat = e.latlng.lat;
                     var lng = e.latlng.lng;
-//                    var address;
-//                    var structuredAddress;
+                    var displayAddress;
+                    var structuredAddress;
         
                     if (marker) { marker.setLatLng(e.latlng); } 
                     else { marker = L.marker(e.latlng).addTo(map); }
@@ -157,19 +157,19 @@
                         const house = a.house_number || "";
                         const city = a.city || a.town || a.village || "";
                         
-                        const displayAddress = `${street} ${house}${street ? ', ' : ''}${city}`.trim();
+                        const shortAddress = `${street} ${house}${street ? ', ' : ''}${city}`.trim();
                 
                         // Формируем полный объект для отправки в Callback
-                        const structuredAddress = JSON.stringify({
+                        structuredAddress = JSON.stringify({
                             street: street,
                             house: house,
                             city: city,
                             suburb: a.suburb || "",
                             postcode: a.postcode || "",
                             full: data.display_name || "",
-                            display: displayAddress || ""
+                            display: shortAddress || "Адрес не найден"
                         });
-//                        address = data.display_name || "Адрес не найден";
+                        displayAddress = shortAddress;
                     });
 
                     // Контент всплывающего окна
@@ -178,7 +178,7 @@
                             <span class="popup-title">Машина здесь</span>
                             <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
                                 Примерный адрес:<br>
-                                <b style="color: #333;">${displayAddress}</b>
+                                <b style="color: #333;">${displayAddress || "Адрес не найден"}</b>
                             </div>
                             <button class="popup-btn" id="glideSendBtn">Отправить</button>
                         </div>
